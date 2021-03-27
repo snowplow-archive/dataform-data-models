@@ -1,0 +1,45 @@
+/*
+   Copyright 2021 Snowplow Analytics Ltd. All rights reserved.
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+       http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+config {
+  type: "assertion",
+  disabled: sp.assertions_disabled || sp.model_disabled,
+  database: dataform.projectConfig.defaultDatabase,
+  name: "021_page_views_staged",
+  dependencies: ["08_commit_users"],
+  hermetic: true,
+  tags: ["sp_assert"]
+}
+
+SELECT
+  page_view_id
+
+FROM
+  `${sp.scratch_schema}.page_views_staged${sp.entropy}`
+
+WHERE event_id IS NULL
+  OR page_view_id IS NULL
+  OR collector_tstamp IS NULL
+  OR dvce_created_tstamp IS NULL
+  OR derived_tstamp IS NULL
+  OR start_tstamp IS NULL
+  OR end_tstamp IS NULL
+  OR engaged_time_in_s IS NULL
+  OR absolute_time_in_s IS NULL
+  OR page_url IS NULL
+  OR domain_userid IS NULL
+  OR network_userid IS NULL
+  OR domain_sessionid IS NULL
+  OR domain_sessionidx IS NULL
+  OR page_view_in_session_index IS NULL
+  OR page_views_in_session IS NULL

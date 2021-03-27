@@ -1,0 +1,56 @@
+/*
+   Copyright 2021 Snowplow Analytics Ltd. All rights reserved.
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+       http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+config {
+  type: "operations",
+  name: "98_base_manifest",
+  disabled: sp.model_disabled,
+  dependencies: [
+    "08_commit_users",
+    "010_events_staged",
+    "010_events_this_run",
+    "011_events_staged",
+    "011_events_this_run",
+    "020_page_views_staged",
+    "020_page_views_this_run",
+    "021_page_views_staged",
+    "021_page_views_this_run",
+    "030_sessions_this_run",
+    "031_sessions_this_run",
+    "040_users_this_run",
+    "041_users_this_run"
+  ],
+  hermetic: true,
+  hasOutput: false,
+  tags: ["sp_web", "sp_base"]
+}
+
+DECLARE LOWER_LIMIT TIMESTAMP;
+
+SET LOWER_LIMIT = (SELECT lower_limit FROM `${sp.scratch_schema}.base_run_limits${sp.entropy}`);
+
+BEGIN
+  DELETE
+    FROM `${sp.output_schema}.base_event_id_manifest${sp.entropy}`
+    WHERE event_id IN (SELECT event_id FROM `${sp.scratch_schema}.events_this_run${sp.entropy}`)
+    AND collector_tstamp >= LOWER_LIMIT;
+
+  INSERT INTO `${sp.output_schema}.base_event_id_manifest${sp.entropy}` (SELECT event_id, collector_tstamp FROM `${sp.scratch_schema}.events_this_run${sp.entropy}`);
+
+  -- Commit session_id manifest
+  DELETE
+    FROM `${sp.output_schema}.base_session_id_manifest${sp.entropy}`
+    WHERE session_id IN (SELECT session_id FROM `${sp.scratch_schema}.base_sessions_to_include${sp.entropy}`);
+
+  INSERT INTO `${sp.output_schema}.base_session_id_manifest${sp.entropy}` (SELECT * FROM `${sp.scratch_schema}.base_sessions_to_include${sp.entropy}`);
+END;

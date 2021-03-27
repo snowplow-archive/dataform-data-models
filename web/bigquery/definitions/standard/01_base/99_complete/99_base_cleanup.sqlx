@@ -1,0 +1,60 @@
+/*
+   Copyright 2021 Snowplow Analytics Ltd. All rights reserved.
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+       http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+config {
+  type: "operations",
+  name: "99_base_cleanup",
+  disabled: sp.model_disabled && sp.destroy_disabled,
+  dependencies: ["98_base_manifest"],
+  hermetic: true,
+  hasOutput: false,
+  tags: ["sp_web", "sp_base"]
+}
+
+js {
+  function cleanup_base() {
+    let ret = ``;
+    let clean_base = (sp.destroy_disabled === false) ? "all" : sp.cleanup_mode.base;
+    if (clean_base === "trace") {
+      ret += `SELECT 1;`;
+    } else {
+      ret += `
+        DROP TABLE IF EXISTS \`${sp.scratch_schema}.base_new_events_limits${sp.entropy}\`;
+        DROP TABLE IF EXISTS \`${sp.scratch_schema}.base_sessions_to_process${sp.entropy}\`;
+        DROP TABLE IF EXISTS \`${sp.scratch_schema}.base_sessions_to_include${sp.entropy}\`;
+        DROP TABLE IF EXISTS \`${sp.scratch_schema}.base_metadata_this_run${sp.entropy}\`;
+        DROP TABLE IF EXISTS \`${sp.scratch_schema}.base_run_metadata_temp${sp.entropy}\`;
+        DROP TABLE IF EXISTS \`${sp.scratch_schema}.base_session_id_run_manifest${sp.entropy}\`;
+      `;
+    }
+
+    if (clean_base === "debug" || clean_base === "trace") {
+      ret += `SELECT 1;`;
+    } else {
+      ret += `
+        DROP TABLE IF EXISTS \`${sp.scratch_schema}.base_run_manifest${sp.entropy}\`;
+        DROP TABLE IF EXISTS \`${sp.scratch_schema}.events_this_run${sp.entropy}\`;
+        DROP TABLE IF EXISTS \`${sp.scratch_schema}.base_duplicates_this_run${sp.entropy}\`;
+        DROP TABLE IF EXISTS \`${sp.scratch_schema}.base_run_limits${sp.entropy}\`;
+      `;
+    }
+
+    if (sp.ends_run.base === true || sp.destroy_disabled === false) {
+      ret += `DROP TABLE IF EXISTS \`${sp.scratch_schema}.metadata_run_id${sp.entropy}\`;`;
+    }
+
+    return ret;
+  }
+}
+
+${cleanup_base()}

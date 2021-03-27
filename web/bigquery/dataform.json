@@ -1,0 +1,8 @@
+{
+    "warehouse": "bigquery",
+    "defaultSchema": "scratch",
+    "assertionSchema": "scratch",
+    "defaultDatabase": "com-acme",
+    "tablePrefix": "",
+    "useRunCache": false
+}

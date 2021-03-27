@@ -1,0 +1,38 @@
+/*
+   Copyright 2021 Snowplow Analytics Ltd. All rights reserved.
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+       http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+config {
+  type: "assertion",
+  disabled: sp.assertions_disabled || sp.model_disabled,
+  database: dataform.projectConfig.defaultDatabase,
+  name: "011_datamodel_metadata",
+  dependencies: ["99_users_cleanup"],
+  hermetic: true,
+  tags: ["sp_assert"]
+}
+
+SELECT *
+
+FROM `${sp.output_schema}.datamodel_metadata${sp.entropy}`
+
+WHERE run_id IS NULL
+  OR model_version IS NULL
+  OR model IS NULL
+  OR module IS NULL
+  OR run_start_tstamp IS NULL
+  OR run_end_tstamp IS NULL
+  OR distinct_key IS NULL
+  OR distinct_key_count IS NULL
+  OR time_key IS NULL
+  OR rows_this_run IS NULL
+  OR rows_this_run < 0
