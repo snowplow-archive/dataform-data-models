@@ -4,7 +4,7 @@
 [![License][license-image]][license]
 [![Discourse posts][discourse-image]][discourse]
 
-# Quickstart
+## Quickstart
 
  - The `web/bigquery` directory contains the Snowplow BigQuery web model v1.0.3 structured as a Dataform project. As a first step copy its contents to the root of your Dataform project.
  - Configure the model.
@@ -142,7 +142,7 @@ To configure your data model you only need to check the `sp.js` file in your `in
    };
    ```
 
-6. **Other parameters**
+7. **Other parameters**
    - `lookback_window_hours`: (default: 6). Period of time (in hours) to look before the latest event in manifest - to account for late arriving data, which comes out of order.
    - `days_late_allowed`: (default: 3). Period of time (in days) for which we should include late data. If the difference between collector tstamps for the session start and new event is greater than this value, data for that session will not be processed.
    - `session_lookback_days`: (default: 365). Period of time (in days) to limit scan on session manifest. Exists to improve performance of model when we have a lot of sessions. Should be set to as large a number as practical.
@@ -181,7 +181,6 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-
 
 
 [license-image]: http://img.shields.io/badge/license-Apache--2-blue.svg?style=flat
