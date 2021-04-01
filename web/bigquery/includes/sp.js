@@ -13,7 +13,7 @@
 
 
 // model version
-const model_version = "bigquery/web/0.1.0";
+const model_version = "bigquery/web/0.1.1";
 
 // model run options
 const model_disabled = false;
