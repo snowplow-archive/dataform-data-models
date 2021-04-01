@@ -1,0 +1,64 @@
+/*
+   Copyright 2021 Snowplow Analytics Ltd. All rights reserved.
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+       http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+config {
+  type: "operations",
+  name: "01_link_clicks",
+  disabled: sp.model_disabled,
+  dependencies: [
+    "07_commit_page_views"
+  ],
+  hermetic: true,
+  hasOutput: false,
+  tags: ["sp_web", "sp_custom"]
+}
+
+CREATE OR REPLACE TABLE `${sp.scratch_schema}.link_clicks${sp.entropy}` AS(
+  WITH click_count AS(
+    SELECT
+      page_view_id,
+      COUNT(DISTINCT event_id) AS link_clicks,
+
+    FROM
+      `${sp.scratch_schema}.events_staged${sp.entropy}`
+    WHERE
+      event_name = 'link_click'
+    GROUP BY 1
+
+  ), first_and_last AS(
+    SELECT
+      page_view_id,
+
+      FIRST_VALUE(unstruct_event_com_snowplowanalytics_snowplow_link_click_1_0_1.target_url) OVER(PARTITION BY page_view_id
+         ORDER BY derived_tstamp desc
+         ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS first_link_clicked,
+
+      LAST_VALUE(unstruct_event_com_snowplowanalytics_snowplow_link_click_1_0_1.target_url) OVER(PARTITION BY page_view_id
+         ORDER BY derived_tstamp desc
+         ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS last_link_clicked
+
+    FROM `${sp.scratch_schema}.events_staged${sp.entropy}`
+    WHERE event_name = 'page_view'
+  )
+  SELECT
+    b.page_view_id,
+    COALESCE(a.link_clicks, 0) AS link_clicks,
+    b.first_link_clicked,
+    b.last_link_clicked
+
+  FROM
+    click_count a
+  LEFT JOIN
+    first_and_last b
+  ON b.page_view_id = a.page_view_id
+);

@@ -17,6 +17,7 @@ config {
   disabled: sp.model_disabled,
   dependencies: [
     "08_commit_users",
+    ...sp.custom_staged_dependencies,
     "010_events_staged",
     "010_events_this_run",
     "011_events_staged",

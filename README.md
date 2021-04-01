@@ -156,11 +156,91 @@ To configure your data model you only need to check the `sp.js` file in your `in
    - `ua_parser`: (default: `false`). Whether to include data from the UA Parser enrichment.
    - `yauaa`: (default: `false`). Whether to include data from the YAUAA enrichment.
 
+8. **Custom staged dependencies**
+   - `custom_staged_dependencies` : This array parameter allows you ensure custom steps that depend on standard model's `staged` tables run before the complete steps that truncate them. You can read more in [Customization][customization] below.
 
 Now your model is configured and you can finish by setting up your Dataform environment(s).
 
 
-## Join the Snowplow community
+## Customization
+
+Following the [customization plugin principles][custom-sql] of the parent [v1 Bigquery web model][bq-web-model-dir], it is also possible to customize the Dataform model and leverage the incrementalization logic of the standatd modules.
+
+In the `definitions/custom` subdirectory you can find the [same custom example][custom-sql] featured in the v1 BigQuery web model implemented for Dataform. In the directory structure you can see the custom modules parallel to standard:
+
+```
+├── dataform.json
+├── definitions
+│   ├── assertions
+│   ├── custom
+│   ├── standard
+│   └── utils
+├── environments.json
+├── includes
+│   └── sp.js
+├── package.json
+└── package-lock.json
+```
+
+In order to compliment the standard model with your custom incremental module, you only need to know which module's `_staged` tables it is meant to consume. Those modules' commit actions will be the dependencies of your custom module.
+
+For example, the featured custom module, consumes both the `events_staged` and the `page_views_staged` tables, that are outputs of the `01_base` and `02_page_views` modules respectively. Since the `02_page_views` module already depends on the `01_base` module, it suffices to depend the first action of the custom module only on the last step of the page_views module (`07_commit_page_views`).
+
+```
+config {
+  type: "operations",
+  name: "01_link_clicks",
+  disabled: sp.model_disabled,
+  dependencies: [
+    "07_commit_page_views"
+  ],
+  hermetic: true,
+  hasOutput: false,
+  tags: ["sp_web", "sp_custom"]
+}
+
+```
+
+Since the `99_complete` steps of the standard model complete the incremental logic by truncating the `staged` tables, you also need to ensure that the part of custom module that depends on those tables, also runs before the `99_complete` steps. In order to do so, you only need to add the dependent step(s) in the `custom_staged_dependencies` array defined in the `sp.js` file.
+
+```
+const custom_staged_dependencies = [
+    "02_channel_engagement"
+];
+
+```
+
+As you can see, for our custom example, the last step depending on `staged` tables is the `02_channel_engagement`, which gets added in `custom_staged_dependencies`.
+
+Further notes:
+1. The custom module follows the incrementalization logic of standard modules, by having the main, complete and detroy steps of its own:
+
+   - The main steps of the custom module run along the standard model, that's why in their config we set:
+
+   ```
+     disabled: sp.model_disabled,
+   ```
+
+   - The `complete` step of the custom module, need to _also_ run for a complete destruction of the whole model, that is why in `custom/99_custom_complete.sqlx`:
+
+   ```
+     disabled: sp.model_disabled && sp.destroy_disabled,
+   ```
+
+   - Similarly the destroy step of the custom module runs along the destroy steps of the standard model:
+
+   ```
+     disabled: sp.destroy_disabled,
+   ```
+
+
+2. We generally suggest that any customization:
+
+   - Follows in analogy the same [guidelines and best practices][custom-best-practices] mentioned in Snowplow's v1 web model.
+   - Interacts with the standard model only through the `sp.js` file, avoiding to change the standard model's files directly.
+
+
+# Join the Snowplow community
 
 We welcome all ideas, questions and contributions!
 
@@ -203,3 +283,6 @@ limitations under the License.
 [docs-datamodeling]: https://docs.snowplowanalytics.com/docs/modeling-your-data/the-snowplow-web-data-model/
 [javascript-tracker]: https://docs.snowplowanalytics.com/docs/collecting-data/collecting-from-own-applications/javascript-trackers/javascript-tracker/
 [enrichments]: https://docs.snowplowanalytics.com/docs/enriching-your-data/available-enrichments/
+[customization]: https://github.com/snowplow-incubator/dataform-data-models/tree/master#customization
+[custom-sql]: https://github.com/snowplow/data-models/tree/master/web/v1/bigquery/sql-runner/sql/custom
+[custom-best-practices]: https://github.com/snowplow/data-models/tree/master/web/v1/bigquery/sql-runner/sql/custom#guidelines--best-practice

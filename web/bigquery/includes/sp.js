@@ -76,6 +76,13 @@ const cleanup_mode = {
     users: "all"
 };
 
+// For custom modules that depend on `staged` tables of the model:
+//  - add their (last) dependent steps in the `custom_staged_dependencies` array
+//    to ensure they run before the complete steps of the web model
+const custom_staged_dependencies = [
+    "02_channel_engagement"
+];
+
 
 module.exports = {
     model_disabled,
@@ -102,5 +109,6 @@ module.exports = {
     yauaa,
     ends_run,
     cleanup_mode,
-    assertions_disabled
+    assertions_disabled,
+    custom_staged_dependencies
 };
